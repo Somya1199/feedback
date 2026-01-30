@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { fetchFeedbackResponses, type FeedbackResponse, fetchManagementMapping } from '@/services/sheetsApi';
 import SheetsDataTable from '@/components/SheetsDataTable';
 import { EmployeeMapping } from '@/services/mappingApi';
+import { useAuth } from '@/hooks/useAuth';
 import {
   BarChart,
   Bar,
@@ -24,6 +25,8 @@ type AdminTab = 'home' | 'analytics' | 'logs' | 'reminders' | 'sheets';
 
 const AdminPage = () => {
   const navigate = useNavigate();
+  const { checkAccess, isAdmin, userEmail, isLoading: authLoading } = useAuth();
+
   const { toast } = useToast();
   // const [activeTab, setActiveTab] = useState<AdminTab>('sheets');
   const [activeTab, setActiveTab] = useState<AdminTab>('home');
@@ -76,6 +79,23 @@ const AdminPage = () => {
       loadAllData();
     }
   }, [activeTab]);
+  useEffect(() => {
+    if (!authLoading) {
+      checkAccess();
+    }
+  }, [checkAccess, authLoading]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Verifying admin access...</p>
+        </div>
+      </div>
+    );
+  }
+
 
   // Reset to page 1 when items per page changes
   useEffect(() => {
@@ -2062,7 +2082,10 @@ const AdminPage = () => {
         </nav>
 
         <div className="p-4 border-t border-white/10">
-          <Button variant="ghost" onClick={() => navigate('/')} className="w-full text-white/70 hover:text-white hover:bg-white/10">
+          <Button variant="ghost" onClick={() => {
+            navigate('/');
+            window.scrollTo(0, 0);
+          }} className="w-full text-white/70 hover:text-white hover:bg-white/10">
             <LogOut className="w-4 h-4 mr-2" />
             Back to Home
           </Button>
