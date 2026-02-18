@@ -436,132 +436,310 @@ const FeedbackPage = () => {
   //   return { targets: targetsData, userData: userDataResult };
   // };
   // In your FeedbackPage.tsx - Update the transformMappingData function
+  // const transformMappingData = (data: any[], userEmail: string): { targets: FeedbackTargets, userData: UserData | null } => {
+  //   console.log('transformMappingData called with:', {
+  //     dataLength: data.length,
+  //     userEmail
+  //   });
+
+  //   const targetsData: FeedbackTargets = {
+  //     'POC': [],
+  //     'Manager': [],
+  //     'Account Manager': []
+  //   };
+
+  //   let userMapping: MappingData | null = null;
+
+  //   // Find user in mapping data
+  //   data.forEach((item, index) => {
+  //     const itemEmail = item.Email || '';
+  //     const itemLdap = item.Ldap || '';
+  //     const userEmailLower = userEmail.toLowerCase();
+
+  //     if (itemEmail.toLowerCase() === userEmailLower ||
+  //       itemLdap.toLowerCase() === userEmailLower) {
+  //       userMapping = item;
+  //       console.log('Found matching user at row', index, ':', item);
+  //     }
+  //   });
+
+  //   if (!userMapping) {
+  //     return { targets: targetsData, userData: null };
+  //   }
+
+  //   // Extract user data with demographics
+  //   const userProcess = userMapping.Process || 'General';
+  //   const userEmailFromMapping = userMapping.Email || userEmail;
+  //   const userDisplayName = getDisplayName(userEmailFromMapping);
+
+  //   const userDataResult: UserData = {
+  //     email: userEmailFromMapping,
+  //     name: userDisplayName,
+  //     process: userProcess,
+  //     ldap: userMapping.Ldap || undefined,
+  //     // Add demographic fields
+  //     gender: userMapping.Gender || '',
+  //     tenure: userMapping.Tenure || '',
+  //     designation: userMapping.Designation || userMapping['Designation/Level'] || '',
+  //     age: userMapping.Age || '',
+  //     genderOfManagement: userMapping['Gender of Management'] || userMapping['Gender of the management'] || ''
+  //   };
+
+  //   // Create targets
+  //   if (userMapping.POC && userMapping.POC.includes('@')) {
+  //     targetsData['POC'].push({
+  //       email: userMapping.POC,
+  //       name: getDisplayName(userMapping.POC),
+  //       process: userProcess,
+  //       role: 'POC'
+  //     });
+  //   }
+
+  //   if (userMapping.Manager && userMapping.Manager.includes('@')) {
+  //     targetsData['Manager'].push({
+  //       email: userMapping.Manager,
+  //       name: getDisplayName(userMapping.Manager),
+  //       process: userProcess,
+  //       role: 'Manager'
+  //     });
+  //   }
+
+  //   if (userMapping['Account manager'] && userMapping['Account manager'].includes('@')) {
+  //     targetsData['Account Manager'].push({
+  //       email: userMapping['Account manager'],
+  //       name: getDisplayName(userMapping['Account manager']),
+  //       process: userProcess,
+  //       role: 'Account Manager'
+  //     });
+  //   }
+
+  //   return { targets: targetsData, userData: userDataResult };
+  // };
   const transformMappingData = (data: any[], userEmail: string): { targets: FeedbackTargets, userData: UserData | null } => {
-    console.log('transformMappingData called with:', {
-      dataLength: data.length,
-      userEmail
-    });
+  console.log('transformMappingData called with:', {
+    dataLength: data.length,
+    userEmail
+  });
 
-    const targetsData: FeedbackTargets = {
-      'POC': [],
-      'Manager': [],
-      'Account Manager': []
-    };
-
-    let userMapping: MappingData | null = null;
-
-    // Find user in mapping data
-    data.forEach((item, index) => {
-      const itemEmail = item.Email || '';
-      const itemLdap = item.Ldap || '';
-      const userEmailLower = userEmail.toLowerCase();
-
-      if (itemEmail.toLowerCase() === userEmailLower ||
-        itemLdap.toLowerCase() === userEmailLower) {
-        userMapping = item;
-        console.log('Found matching user at row', index, ':', item);
-      }
-    });
-
-    if (!userMapping) {
-      return { targets: targetsData, userData: null };
-    }
-
-    // Extract user data with demographics
-    const userProcess = userMapping.Process || 'General';
-    const userEmailFromMapping = userMapping.Email || userEmail;
-    const userDisplayName = getDisplayName(userEmailFromMapping);
-
-    const userDataResult: UserData = {
-      email: userEmailFromMapping,
-      name: userDisplayName,
-      process: userProcess,
-      ldap: userMapping.Ldap || undefined,
-      // Add demographic fields
-      gender: userMapping.Gender || '',
-      tenure: userMapping.Tenure || '',
-      designation: userMapping.Designation || userMapping['Designation/Level'] || '',
-      age: userMapping.Age || '',
-      genderOfManagement: userMapping['Gender of Management'] || userMapping['Gender of the management'] || ''
-    };
-
-    // Create targets
-    if (userMapping.POC && userMapping.POC.includes('@')) {
-      targetsData['POC'].push({
-        email: userMapping.POC,
-        name: getDisplayName(userMapping.POC),
-        process: userProcess,
-        role: 'POC'
-      });
-    }
-
-    if (userMapping.Manager && userMapping.Manager.includes('@')) {
-      targetsData['Manager'].push({
-        email: userMapping.Manager,
-        name: getDisplayName(userMapping.Manager),
-        process: userProcess,
-        role: 'Manager'
-      });
-    }
-
-    if (userMapping['Account manager'] && userMapping['Account manager'].includes('@')) {
-      targetsData['Account Manager'].push({
-        email: userMapping['Account manager'],
-        name: getDisplayName(userMapping['Account manager']),
-        process: userProcess,
-        role: 'Account Manager'
-      });
-    }
-
-    return { targets: targetsData, userData: userDataResult };
+  const targetsData: FeedbackTargets = {
+    'POC': [],
+    'Manager': [],
+    'Account Manager': []
   };
-  const getAllTargets = (data: any[]): FeedbackTargets => {
-    const targetsData: FeedbackTargets = {
-      'POC': [],
-      'Manager': [],
-      'Account Manager': []
-    };
 
-    const seenEmails = new Set<string>();
+  // Find ALL rows that match the user
+  const userRows: MappingData[] = [];
 
-    data.forEach((item) => {
-      // For POC
-      if (item.POC && item.POC.includes('@') && !seenEmails.has(item.POC.toLowerCase())) {
+  data.forEach((item) => {
+    const itemEmail = item.Email || '';
+    const itemLdap = item.Ldap || '';
+    const userEmailLower = userEmail.toLowerCase();
+
+    if (itemEmail.toLowerCase() === userEmailLower ||
+        itemLdap.toLowerCase() === userEmailLower) {
+      userRows.push(item);
+    }
+  });
+
+  console.log(`Found ${userRows.length} rows for user: ${userEmail}`);
+
+  if (userRows.length === 0) {
+    console.warn(`No mapping found for user: ${userEmail}`);
+    return { targets: targetsData, userData: null };
+  }
+
+  // Use the first row for user info (all rows should have same user info)
+  const firstRow = userRows[0];
+  
+  // Extract user data
+  const userProcess = firstRow.Process || 'General';
+  const userEmailFromMapping = firstRow.Email || userEmail;
+  const userDisplayName = getDisplayName(userEmailFromMapping);
+
+  const userDataResult: UserData = {
+    email: userEmailFromMapping,
+    name: userDisplayName,
+    process: userProcess,
+    ldap: firstRow.Ldap || undefined,
+    gender: firstRow.Gender || '',
+    tenure: firstRow.Tenure || '',
+    designation: firstRow.Designation || firstRow['Designation/Level'] || '',
+    age: firstRow.Age || '',
+    genderOfManagement: firstRow['Gender of Management'] || firstRow['Gender of the management'] || ''
+  };
+
+  console.log('User data from first row:', userDataResult);
+
+  // Track unique emails to avoid duplicates
+  const uniqueEmails = new Set<string>();
+
+  // Process ALL rows for this user to collect all managers
+  userRows.forEach((row, index) => {
+    console.log(`Processing row ${index + 1} for user ${userEmail}:`, {
+      POC: row.POC,
+      Manager: row.Manager,
+      AccountManager: row['Account manager']
+    });
+
+    // Add POC if exists and not already added
+    if (row.POC && row.POC.includes('@')) {
+      const pocEmail = row.POC.trim().toLowerCase();
+      if (!uniqueEmails.has(pocEmail)) {
+        uniqueEmails.add(pocEmail);
+        targetsData['POC'].push({
+          email: row.POC,
+          name: getDisplayName(row.POC),
+          process: userProcess,
+          role: 'POC'
+        });
+        console.log(`Added POC from row ${index + 1}: ${row.POC}`);
+      }
+    }
+
+    // Add Manager if exists and not already added
+    if (row.Manager && row.Manager.includes('@')) {
+      const managerEmail = row.Manager.trim().toLowerCase();
+      if (!uniqueEmails.has(managerEmail)) {
+        uniqueEmails.add(managerEmail);
+        targetsData['Manager'].push({
+          email: row.Manager,
+          name: getDisplayName(row.Manager),
+          process: userProcess,
+          role: 'Manager'
+        });
+        console.log(`Added Manager from row ${index + 1}: ${row.Manager}`);
+      }
+    }
+
+    // Add Account Manager if exists and not already added
+    if (row['Account manager'] && row['Account manager'].includes('@')) {
+      const accountManagerEmail = row['Account manager'].trim().toLowerCase();
+      if (!uniqueEmails.has(accountManagerEmail)) {
+        uniqueEmails.add(accountManagerEmail);
+        targetsData['Account Manager'].push({
+          email: row['Account manager'],
+          name: getDisplayName(row['Account manager']),
+          process: userProcess,
+          role: 'Account Manager'
+        });
+        console.log(`Added Account Manager from row ${index + 1}: ${row['Account manager']}`);
+      }
+    }
+  });
+
+  // Log results
+  console.log('Final target counts:', {
+    POC: targetsData['POC'].length,
+    Manager: targetsData['Manager'].length,
+    AccountManager: targetsData['Account Manager'].length,
+    allTargets: Object.entries(targetsData).flatMap(([role, targets]) => 
+      targets.map(t => ({ role, name: t.name, email: t.email }))
+    )
+  });
+
+  return { targets: targetsData, userData: userDataResult };
+};
+  // const getAllTargets = (data: any[]): FeedbackTargets => {
+  //   const targetsData: FeedbackTargets = {
+  //     'POC': [],
+  //     'Manager': [],
+  //     'Account Manager': []
+  //   };
+
+  //   const seenEmails = new Set<string>();
+
+  //   data.forEach((item) => {
+  //     // For POC
+  //     if (item.POC && item.POC.includes('@') && !seenEmails.has(item.POC.toLowerCase())) {
+  //       targetsData['POC'].push({
+  //         email: item.POC,
+  //         name: getDisplayName(item.POC),
+  //         process: item.Process || 'General',
+  //         role: 'POC'
+  //       });
+  //       seenEmails.add(item.POC.toLowerCase());
+  //     }
+
+  //     // For Manager
+  //     if (item.Manager && item.Manager.includes('@') && !seenEmails.has(item.Manager.toLowerCase())) {
+  //       targetsData['Manager'].push({
+  //         email: item.Manager,
+  //         name: getDisplayName(item.Manager),
+  //         process: item.Process || 'General',
+  //         role: 'Manager'
+  //       });
+  //       seenEmails.add(item.Manager.toLowerCase());
+  //     }
+
+  //     // For Account Manager
+  //     if (item['Account manager'] && item['Account manager'].includes('@') && !seenEmails.has(item['Account manager'].toLowerCase())) {
+  //       targetsData['Account Manager'].push({
+  //         email: item['Account manager'],
+  //         name: getDisplayName(item['Account manager']),
+  //         process: item.Process || 'General',
+  //         role: 'Account Manager'
+  //       });
+  //       seenEmails.add(item['Account manager'].toLowerCase());
+  //     }
+  //   });
+
+  //   return targetsData;
+  // };
+const getAllTargets = (data: any[]): FeedbackTargets => {
+  const targetsData: FeedbackTargets = {
+    'POC': [],
+    'Manager': [],
+    'Account Manager': []
+  };
+
+  const seenEmails = new Set<string>();
+
+  data.forEach((item) => {
+    // For POC - single email per row
+    if (item.POC && item.POC.includes('@')) {
+      const pocEmail = item.POC.toLowerCase();
+      if (!seenEmails.has(pocEmail)) {
+        seenEmails.add(pocEmail);
         targetsData['POC'].push({
           email: item.POC,
           name: getDisplayName(item.POC),
           process: item.Process || 'General',
           role: 'POC'
         });
-        seenEmails.add(item.POC.toLowerCase());
       }
+    }
 
-      // For Manager
-      if (item.Manager && item.Manager.includes('@') && !seenEmails.has(item.Manager.toLowerCase())) {
+    // For Manager - single email per row
+    if (item.Manager && item.Manager.includes('@')) {
+      const managerEmail = item.Manager.toLowerCase();
+      if (!seenEmails.has(managerEmail)) {
+        seenEmails.add(managerEmail);
         targetsData['Manager'].push({
           email: item.Manager,
           name: getDisplayName(item.Manager),
           process: item.Process || 'General',
           role: 'Manager'
         });
-        seenEmails.add(item.Manager.toLowerCase());
       }
+    }
 
-      // For Account Manager
-      if (item['Account manager'] && item['Account manager'].includes('@') && !seenEmails.has(item['Account manager'].toLowerCase())) {
+    // For Account Manager - single email per row
+    if (item['Account manager'] && item['Account manager'].includes('@')) {
+      const accountManagerEmail = item['Account manager'].toLowerCase();
+      if (!seenEmails.has(accountManagerEmail)) {
+        seenEmails.add(accountManagerEmail);
         targetsData['Account Manager'].push({
           email: item['Account manager'],
           name: getDisplayName(item['Account manager']),
           process: item.Process || 'General',
           role: 'Account Manager'
         });
-        seenEmails.add(item['Account manager'].toLowerCase());
       }
-    });
+    }
+  });
 
-    return targetsData;
-  };
-
+  return targetsData;
+};
   const identifyUserAndLoadData = async () => {
     setStep('loading');
 
@@ -1767,13 +1945,13 @@ if (step === 'select-target') {
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">{selectedTarget?.email}</p>
               </div>
-              {userData && (
+              {/* {userData && (
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">Submitted by</p>
                   <p className="font-medium text-foreground">{userData.name}</p>
                   <p className="text-xs text-muted-foreground">{userData.process}</p>
                 </div>
-              )}
+              )} */}
             </div>
           </div>
 
